@@ -11,7 +11,16 @@ function main(dir_path="../../cleaned_data", dtype::Type=Int32)
     end
 end
 
-function list_triangles(graph::AdjacencyList)
+function main2()
+    G = AdjacencyList{Int}(()->Vector{Int}())
+    G[1] = [2, 3]
+    G[2] = [1, 3]
+    G[3] = [1, 2]
+    triangles = list_triangles(G)
+    println(triangles)
+end
+
+function list_triangles(graph::AdjacencyList{T}) where T<:Real
     truncated = truncate_graph(graph)
     triangles = find_triangles(truncated)
     return triangles
@@ -20,21 +29,20 @@ end
 function truncate_graph(graph::AdjacencyList{T}) where T<:Real
     truncated = Dict{T, Vector{T}}()
     for (node, neighbours) in graph
-        truncated[node] = sort([neighbour
-                                for neighbour in neighbours
-                                if neighbour < node])
-        println(length(truncated[node]))
+        truncated[node] = sort(
+            [neighbour
+             for neighbour in neighbours
+             if degree(graph, node) >= degree(graph, neighbour) & node < neighbour],
+            by=neigh->degree(graph, neigh),
+            rev=true)
     end
     return truncated
 end
 
-function find_triangles(graph)
-    triangles = Vector{Vector{eltype(graph)}}()
+function find_triangles(graph::Dict{T, Vector{T}}) where T<:Real
+    triangles = Vector{Vector{T}}()
     for (node, neighbours) in graph
         for neighbour in neighbours
-            if length(intersect(neighbours, graph[neighbour])) >= 1
-                println(intersect(neighbours, graph[neighbour]))
-            end
             for second_neighbour in intersect(neighbours, graph[neighbour])
                 push!(triangles, [node, neighbour, second_neighbour])
             end
@@ -43,5 +51,9 @@ function find_triangles(graph)
     return triangles
 end
 
+function degree(graph::AdjacencyList, node)
+    return length(graph[node])
+end
 
+main2()
 main()

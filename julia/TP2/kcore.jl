@@ -1,10 +1,15 @@
 using DelimitedFiles: readdlm
+using ProgressBars
 
 function load_edges(filename, delim)
     return readdlm(filename, delim, Int64)
 end
 
 function kcore(nodes::Vector{Int64}, edges::Matrix{Int64})
+    if minimum(edges) == 0
+        edges = edges .+ 1
+        nodes = Vector(1:length(nodes)+1)
+    end
     n = length(nodes)
     i = n
     c = 0
@@ -15,7 +20,7 @@ function kcore(nodes::Vector{Int64}, edges::Matrix{Int64})
         degrees[edge[2]] += 1
     end
 
-    while i != 0
+    for i in ProgressBar(1:n)
         index = argmin(degrees)
         node = nodes[index]
         c = max(c, degrees[index])
@@ -60,7 +65,7 @@ function kcore(nodes::Vector{Int64}, edges::Matrix{Int64})
     return c
 end
 
-filename = "example.txt"
+filename = "email-Eu-core.txt"
 edges = load_edges(filename, ' ')
 nodes = Vector(1:maximum(edges))
 core_value = kcore(nodes, edges)

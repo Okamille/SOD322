@@ -1,281 +1,133 @@
-import os
-import pandas as pd
-from featuresProcessing import processTitanic, processKidneys
-import pulp
-from tqdm import tqdm
-import math
 import numpy as np
+from math import floor
+from random import uniform
+from random import randint
+import networkx as nx
 
-def create_features(data_folder, dataset):
-    data_path = os.path.join(data_folder, dataset + '.csv')
+#exercice 1
+def graph_rand_edges(p,q,nb_nodes=400,nb_clusters=4):
 
-    if not os.path.exists(data_path):
-        print('Error in creating features : Input file not found %s'
-              % data_path)
-        return
+    # p,  proba of linking 2 nodes in the same cluster
+    #  q,  proba of linking 2 nodes in different clusters
+    # nb_nodes,  number of nodes 
+    # nb_clusters,  number of clusters
+    
+    # Define clusters
+    true_comm = []
+    for j in range(nb_clusters):
+        true_comm +=[j for i in range(int(np.floor(nb_nodes/nb_clusters)))]
+      
+    # Create random edges
+    # with probability p if nodes in the same community
+    # with probabitliy q otherwise
+    edges = []
+    for node_1 in range(nb_nodes):
+        for node_2 in range(node_1+1,nb_nodes):
+            r = uniform(0.0,1.0) #random value, uniform between 0 and 1
+            
+            # If nodes are in the same cluster link them with probability p
+            if true_comm[node_1]==true_comm[node_2]: 
+                if r < p:   
+                    edges.append((node_1,node_2))
 
-    data = pd.read_csv(data_path)
-
-    train_data_path = os.path.join(data_folder, dataset + '_train.csv')
-    test_data_path = os.path.join(data_folder, dataset + '_test.csv')
-
-    if not os.path.exists(train_data_path) or \
-       not os.path.exists(test_data_path):
-
-        print('====== Creating features')
-
-        if dataset == 'titanic':
-            features = processTitanic(data)
-
-        if dataset == 'kidney':
-            features = processKidneys(data)
-
-        features = features.sample(frac=1)
-        trainlimit = int(float(len(features)) * 2/3)
-        test = features.loc[:trainlimit]
-        train = features.loc[trainlimit:]
-
-        train.to_csv(train_data_path)
-        test.to_csv(test_data_path)
-
-    else:
-        print("=== Warning: Existing features found, features creation skipped")
-        print("=== Loading existing features")
-
-        train = pd.read_csv(train_data_path, index_col=0)
-        test = pd.read_csv(test_data_path, index_col=0)
-
-    return train, test
+            else : #if nodes in different clusters link them with probability q
+                if r < q:
+                    edges.append((node_1,node_2))
+    
+    # Create networkx graph object
+    Gr= nx.Graph()
+    Gr.add_nodes_from(range(nb_nodes))
+    Gr.add_edges_from(edges)
+    
+    return Gr,true_comm
 
 
-def create_rules(dataset: str, results_folder: str, train: pd.DataFrame):
-    rules_path = os.path.join(results_folder, dataset + '_rules.csv')
-    rules = []
+#exercice 2
 
-    if not os.path.exists(rules_path):
-        print('=== Generating the rules')
+def fy_shuffle(tab):
+    #Fisher-Yates shuffle
+    list_range = range(0, len(tab))
+    for i in list_range:
+        j = randint(list_range[0], list_range[-1])
+        tab[i], tab[j] = tab[j], tab[i]
+    return tab
 
-        t = train.values[:, 1:]
-        transaction_class = train.values[:, 0]
-        n, d = t.shape
+def neighbour_label(graph, node, labels):
+    #find label occurring with the highest frequency among neighbours of node in graph
+    unique_labels = list(set(labels))
+    scores = dict(zip(unique_labels,[0 for i in range(len(unique_labels))]))
+    
+    for neighb in graph.neighbors(node):
+        neighb_label = labels[neighb]
+        scores[neighb_label] += 1
+    
+    argmax = max(scores, key=scores.get)
+    
+    return argmax
 
-        mincovy = 0.05
-        iterlim = 5
-        RgenX = 0.1 / n
-        RgenB = 0.1 / (n * d)
+def label_propagation_step_three(graph,labels):
 
-        all_rules = []
+    new_labels =[-1 for i in range(len(labels))]
+    
+    shuffled_nodes = fy_shuffle(list(graph.nodes))
 
-        for y in [0, 1]:
-            print('Generating rule for class : %d' % y)
+    #for each node in the network (in this random order)
+    # set its label to a label occurring with the highest frequency among its neighbours
+    for node in shuffled_nodes : 
+        new_labels[node] = neighbour_label(graph,node,labels)
+    return new_labels
 
-            rules = []
-            s = 0
-            iter = 1
-            cmax = n
 
-            pbar = tqdm(total=n)
+def label_propagation(graph, init_labels, max_iter=1000):
 
-            while cmax >= float(n) * mincovy:
-                print('Cmax : %d' % cmax)
-                if iter == 1:
-                    s, b = solve_P(t, transaction_class, y, cmax, RgenX, RgenB, rules)
-                    iter = iter + 1
-                rules.append(b)
-                if iter < iterlim:
-                    s_temp, b = solve_P(t, transaction_class, y, cmax, RgenX, RgenB, rules)
-                    if s_temp < s:
-                        pbar.update(cmax - min(cmax - 1, s_temp))
-                        cmax = min(cmax - 1, s_temp)
-                        iter = 1
-                    else:
-                        iter = iter + 1
-                else:
-                    pbar.update(1)
-                    cmax = cmax - 1
-                    iter = 1
-            all_rules += rules
+    test = True #bool that indicates if the we keep iterating the algorithm
+    n_iter = 0
+    labels = init_labels
+    
+    while test :
+        #step three: label propagation
+        labels = label_propagation_step_three(graph,labels)
         
-    else:
-        # Load rules
-        pass
-    return np.array(all_rules, dtype=int)
-
-def sortRules(dataset, resultsFolder, train, rules):
-    orderedRulesPath = os.path.join(resultsFolder, dataset, '_ordered_rules.csv')
-
-    if not os.path.exists(orderedRulesPath):
-        X = train.values[:, 1:]
-        y = train.values[:, 0]
-        n, d = X.shape
-
-        rule_0 = np.array([0] * d).reshape(1, -1)
-        rule_1 = np.array([1] * d).reshape(1, -1)
-
-        rules = np.append(rules, rule_0, axis=0)
-        rules = np.append(rules, rule_1, axis=0)
-        rules = np.unique(rules, axis=0)
-
-        L = rules.shape[0]
-        index_0 = 0
-        index_1 = 0
-        for index in range(L):
-            if (rules[index] == 0).all():
-                index_0 = index
-            if (rules[index] == 1).all():
-                index_1 = index
-        Rrank = 1/L
-
-        p = np.zeros(shape=(n, L))
-
-        for i in range(n):
-            for l in range(L):
-                if (X[i] - rules[l] >= 0).all():
-                    if y[i] == rules[l, 0]:
-                        p[i, l] = 1
-                    else:
-                        p[i, l] = -1
-
-        v = np.abs(p)
-
-        P = pulp.LpProblem('Problem', pulp.LpMaximize)
-        #TODO : set maximum iteration
-        u = pulp.LpVariable.dicts('u', [str(i) + '_' + str(j) for i in range(n) for j in range(L)], cat=pulp.LpBinary)
-        r = pulp.LpVariable.dicts('r', range(L), 1, L, cat=pulp.LpInteger)
-        rstar = pulp.LpVariable('rstar', 1, L)
-
-        g = pulp.LpVariable.dicts('g', range(n), 1, L, pulp.LpInteger)
-
-        s = pulp.LpVariable.dicts('s', [str(i) + '_' + str(j) for i in range(L) for j in range(L)], cat=pulp.LpBinary)
-        rA = r[0]
-        rB = r[1]
-        
-        alpha = pulp.LpVariable('alpha', cat=pulp.LpBinary)
-        beta = pulp.LpVariable('beta', 0, 1)
-
-        P += pulp.lpSum([p[i, j] * u[str(i) + '_' + str(j)] for i in range(n) for j in range(L)]) + Rrank * rstar
-
-        # Constraints
-        for i in range(n):
-            P += pulp.lpSum([u[str(i) + '_' + str(j)] for j in range(L)]) == 1
-
-        for i in range(n):
-            for l in range(L):
-                P += g[i] >= v[i, l] * r[l]
-                P += g[i] <= v[i, l] * r[l] + L * (1 - u[str(i) + '_' + str(l)])
-
-        for i in range(n):
-            for l in range(L):
-                P += u[str(i) + '_' + str(l)] >= 1 - g[i] + v[i, l] * r[l]
-                P += u[str(i) + '_' + str(l)] <= v[i, l]
-
-        for k in range(L):
-            P += pulp.lpSum([s[str(l) + '_' + str(k)] for l in range(L)]) == 1
-        for l in range(L):
-            P += pulp.lpSum([s[str(l) + '_' + str(k)] for k in range(L)]) == 1
-            P += r[l] == pulp.lpSum([(k + 1) * s[str(l) + '_' + str(k)] for k in range(L)])
-
-        P += rstar >= rA
-        P += rstar >= rB
-        P += rstar - rA <= (L-1) * alpha
-        P += rA - rstar <= (L-1) * alpha
-        P += rstar - rB <= (L-1) * beta
-        P += rB - rstar <= (L-1) * beta
-        P += alpha + beta == 1
-
-        for i in range(n):
-            for l in range(L):
-                u[str(i) + '_' + str(l)] <= 1 - (rstar - r[l])/ (L-1)
+        #stoping criteria
+        test = False
+        for node in graph.nodes :
+            # Check if one node doesn't belong to the same communities than the majority of its neighbors
+            if labels[node] != neighbour_label(graph,node,labels):
+                test = True# If one node doesn't satisfy the condition, we need to continue
+        if n_iter > max_iter :
+            test = False
+            
+        n_iter+=1
     
-        P.solve()
+    return labels
 
-        relevant_number_rules = L - math.trunc(pulp.value(rstar)) + 1
-        rules_order = [int(pulp.value(r[l])) - 1 for l in range(L)]
-        ordered_rules = rules[rules_order]
-
-        return ordered_rules
-    else:
-        pass
-
-def solve_P(t, transaction_class, y, cmax, RgenX, RgenB, rules):
-    """
-    Solve the problem P.
-    """
-
-    n, d = t.shape
-
-    P = pulp.LpProblem('Problem', pulp.LpMaximize)
-    x = pulp.LpVariable.dicts('x', range(n), 0, 1, cat=pulp.LpContinuous)
-    b = pulp.LpVariable.dicts('b', range(d), 0, 1, cat=pulp.LpBinary)
-
-    # Objective function
-    mask = (transaction_class == y)
-    P += pulp.lpSum([x[index] for index in range(n) if mask[index]]) - RgenX * pulp.lpSum(x) - RgenB * pulp.lpSum(b)
-
-    # Constraints
-    # (1)
-    for i in range(n):
-        for j in range(d):
-            P += x[i] <= 1 + (t[i, j] - 1) * b[j]
+#exercice 3
+def preprocess_communities(pathToData):
+    '''
+    Convert the community.dat file in a list of the membership of the nodes
     
-    # (2)
-    for i in range(n):
-        P += x[i] >= 1 + pulp.lpSum([(t[i, j] - 1)*b[j] for j in range(d)])
+    Reindex also communities from 0 to nb_communities-1 instead of 0 to nb_communities
+    -----------------------------------------------------------
+    Inputs:
+    :str,  pathToData,  the path to the file containing community.dat
     
-    # (3)
-    P += pulp.lpSum(x) <= cmax
+    Outputs:
+    :list of ints, a list where element i is the community (listed from 0 to n-1) to which node[i] belongs
+    '''
+    return [int(line.replace('\t',' ').replace('\n',' ').split()[1])-1 for line in open(pathToData+"community.dat").readlines()]
 
-    # Don't regenerate the same rules
-    for rule in rules:
-        P += pulp.lpSum([b[j] for j in range(d) if rule[j] == 0]) + pulp.lpSum([1 - b[j] for j in range(d) if rule[j] == 1]) >= 1
+def preprocess_edges(pathToData):
+    '''
+    Convert the network.dat file in a list of edges
+    Also reindex nodes from 0 to nNodes-1 instead of 1 nNodes
+    -----------------------------------------------------------
+    Inputs:
+    :str,  pathToData,  the path to the file containing network.dat
     
-    # Solving problem (P)
-    P.solve()
-
-    s = 0
-    rule = []
-    for i in range(n):
-        s += pulp.value(x[i])
-    for j in range(d):
-        rule.append(pulp.value(b[j]))
-
-    return s, rule
-
-def showStatistics(ordered_rules, df):
-    n = len(df)
-
-    tp = 0.
-    fp = 0.
-    fn = 0.
-    tn = 0.
-
-    X = df.values[:, 1:]
-    y = df.values[:, 0]
-
-    class_size = [0, 0]
-    for i in range(n):
-        mask  = ordered_rules <= X[i]
-        mask = mask.sum(axis=1)
-        for rule_id in range(n):
-            if mask[rule_id] == X.shape[1]:
-                break
-        if ordered_rules[rule_id, 0] == y[i]:
-
-            if y[i] == 0:
-                tp += 1
-                class_size[0] += 1
-            else:
-                tn += 1
-                class_size[1] += 1
-        else:
-            if y[i] == 0:
-                fn += 1
-                class_size[0] += 1
-            else:
-                fp += 1
-                class_size[1] += 1
-    
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-
-    return precision, recall
+    Outputs:
+    :list of tuples, a list where element i is an edge of the graph
+    '''
+    # Reformat the string
+    temp = [line.replace('\t',' ').replace('\n',' ').split() for line in open(pathToData+"network.dat").readlines()] 
+    # Convert to tuples of integers and return
+    return [(int(a)-1,int(b)-1) for a,b in temp]

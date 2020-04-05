@@ -1,9 +1,9 @@
 using DataStructures: Queue, enqueue!, dequeue!, isempty
 
 include("../LoadGraph.jl")
-using .LoadGraph: load
+using .LoadGraph: load_adjacency_list, AdjacencyList
 
-function BFS(graph::Array{Vector{T}}, node::T) where T <: Integer
+function BFS(graph::AdjacencyList{T}, node::T) where T <: Integer
     fifo = Queue{T}()
     enqueue!(fifo, node)
     marks = Dict([(node, true)])

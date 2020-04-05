@@ -1,18 +1,23 @@
 using ProgressBars
 using SparseArrays
 
+
 struct Graph
     transition_matrix::SparseMatrixCSC{Int64, Int64}
+    nodes::Vector{Int64}
+    edges::Vector{Tuple{Int64, Int64}}
     degree_out::Vector{Int64}
     degree_in::Vector{Int64}
     n::Int32
-    function Graph(T, degree_out, degree_in, n)
-        new(T, degree_out, degree_in, n)
+    function Graph(T, nodes, edges, degree_out, degree_in, n)
+        new(T, nodes, edges, degree_out, degree_in, n)
     end
     function Graph(filename)
         # Read edges and nodes from filename
         io = open(filename)
         lines = readlines(io)
+        
+        edges = Vector{Tuple{Int64, Int64}}()
 
         I = Vector{Int64}()
         J = Vector{Int64}()        
@@ -29,6 +34,8 @@ struct Graph
                 push!(I, i1)
                 push!(J, i2)
 
+                push!(edges, (i1, i2))
+
                 if i1 > maxI
                     maxI = i1
                 end
@@ -41,6 +48,8 @@ struct Graph
 
         n = max(maxI, maxJ)
 
+        nodes = Vector{Int64}(1:n)
+
         degree_out = zeros(n)
         degree_in = zeros(n)
         for i in 1:length(I)
@@ -52,7 +61,12 @@ struct Graph
 
         V = ones(Int64, length(I))
         transition_matrix = sparse(I, J, V, n, n)
-        new(transition_matrix, degree_out, degree_in, n)
+        new(transition_matrix, nodes, edges, degree_out, degree_in, n)
     end
     
+end
+
+
+function remove_node(graph::Graph, node::Int64)
+
 end

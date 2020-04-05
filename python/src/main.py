@@ -7,6 +7,8 @@ import time
 from memory_profiler import memory_usage
 import community #python-louvain package
 import pandas as pd
+from sklearn.metrics import normalized_mutual_info_score as NMI
+from sklearn.metrics import adjusted_rand_score as ARS
 
 from functions import graph_rand_edges, fy_shuffle, neighbour_label, label_propagation_step_three, label_propagation
 

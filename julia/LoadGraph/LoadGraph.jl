@@ -1,5 +1,6 @@
 module LoadGraph
 
+using DataStructures: DefaultDict
 using DelimitedFiles: readdlm
 
 export load_adjacency_matrix,
@@ -10,5 +11,6 @@ export load_adjacency_matrix,
 include("adjacency_matrix.jl")
 include("edge_list.jl")
 include("adjacency_list.jl")
+include("utils.jl")
 
 end

@@ -1,7 +1,16 @@
+module BFSQ
+
 using DataStructures: Queue, enqueue!, dequeue!, isempty
 
-include("../LoadGraph.jl")
+include("../LoadGraph/LoadGraph.jl")
 using .LoadGraph: load_adjacency_list, AdjacencyList
+
+function main(dir_path="../cleaned_data", dtype::Type=UInt32)
+    for file in filter(x->occursin(".txt", x), readdir(dir_path))
+        graph = load_adjacency_list("$dir_path/$file", dtype)
+        cc = BFS(graph, one(dtype))
+    end
+end
 
 function BFS(graph::AdjacencyList{T}, node::T) where T <: Integer
     fifo = Queue{T}()
@@ -19,4 +28,6 @@ function BFS(graph::AdjacencyList{T}, node::T) where T <: Integer
         end
     end
     return connected_components
+end
+
 end

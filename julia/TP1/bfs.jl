@@ -7,6 +7,7 @@ function main(dir_path="../../cleaned_data", dtype::Type=Int32)
     for file in filter(x->occursin(".txt", x), readdir(dir_path))
         graph = load_adjacency_list("$dir_path/$file", dtype)
         cc = BFS(graph, one(dtype))
+        println(file)
     end
 end
 
@@ -19,7 +20,7 @@ function BFS(graph::AdjacencyList{T}, node::T) where T
         u = dequeue!(fifo)
         push!(connected_components, u)
         for v in graph[node]
-            if ! marks[v]
+            if ! haskey(marks, v)
                 enqueue!(fifo, v)
                 marks[v] = true
             end

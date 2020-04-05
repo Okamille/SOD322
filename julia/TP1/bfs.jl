@@ -1,13 +1,14 @@
 using DataStructures: Queue, enqueue!, dequeue!, isempty
 
 include("../LoadGraph/LoadGraph.jl")
-using .LoadGraph#: load_adjacency_list, AdjacencyList
+using .LoadGraph: load_adjacency_list, AdjacencyList
 
 function main(dir_path="../../cleaned_data", dtype::Type=Int32)
     for file in filter(x->occursin(".txt", x), readdir(dir_path))
-        graph = load_adjacency_list("$dir_path/$file", dtype)
-        cc = BFS(graph, one(dtype))
         println(file)
+        @time graph = load_adjacency_list("$dir_path/$file", dtype)
+        @time cc = BFS(graph, one(dtype))
+        println()
     end
 end
 

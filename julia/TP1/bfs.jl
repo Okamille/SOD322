@@ -1,7 +1,7 @@
 using DataStructures: Queue, enqueue!, dequeue!, isempty
 
 include("../LoadGraph/LoadGraph.jl")
-using .LoadGraph: load_adjacency_list, AdjacencyList
+using .LoadGraph#: load_adjacency_list, AdjacencyList
 
 function main(dir_path="../../cleaned_data", dtype::Type=Int32)
     for file in filter(x->occursin(".txt", x), readdir(dir_path))
@@ -10,7 +10,7 @@ function main(dir_path="../../cleaned_data", dtype::Type=Int32)
     end
 end
 
-function BFS(graph::AdjacencyList{T}, node::T) where T <: Integer
+function BFS(graph::AdjacencyList{T}, node::T) where T
     fifo = Queue{T}()
     enqueue!(fifo, node)
     marks = Dict{T, Bool}([(node, true)])

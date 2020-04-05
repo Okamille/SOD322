@@ -8,7 +8,7 @@ function one_indexing(edge_list::Array, new_type::Type=UInt32)
     return new_edges
 end
 
-function one_indexing!(edge_list::Array{Int,2})
+function one_indexing!(edge_list::Array)
     dtype = eltype(edge_list)
     nodes = unique(edge_list)
     node_map = Dict(zip(nodes, collect(dtype, 1:length(nodes))))

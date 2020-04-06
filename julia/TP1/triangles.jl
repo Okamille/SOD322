@@ -1,8 +1,9 @@
 include("../LoadGraph/LoadGraph.jl")
 using .LoadGraph: load_adjacency_list, AdjacencyList
 
-function main(dir_path="../../cleaned_data", dtype::Type=Int32)
-    for file in filter(x->occursin(".txt", x), readdir(dir_path))
+function main(dir_path="../../data", dtype::Type=Int32)
+    # for file in filter(x->occursin(".txt", x), readdir(dir_path))
+    for file in ["email-Eu-core.txt", "amazon.txt"]
         println(file)
         @time graph = load_adjacency_list("$dir_path/$file", dtype)
         @time triangles = list_triangles(graph)
@@ -13,11 +14,14 @@ end
 
 function main2()
     G = AdjacencyList{Int}(()->Vector{Int}())
-    G[1] = [2, 3]
-    G[2] = [1, 3]
+    G[1] = [2, 3, 4]
+    G[2] = [1, 3, 4]
     G[3] = [1, 2]
+    G[4] = [1, 2]
     triangles = list_triangles(G)
     println(triangles)
+    println()
+    println()
 end
 
 function list_triangles(graph::AdjacencyList{T}) where T<:Real
@@ -32,7 +36,8 @@ function truncate_graph(graph::AdjacencyList{T}) where T<:Real
         truncated[node] = sort(
             [neighbour
              for neighbour in neighbours
-             if degree(graph, node) >= degree(graph, neighbour) & node < neighbour],
+             if degree(graph, node) >= degree(graph, neighbour) & node < neighbour
+            ],
             by=neigh->degree(graph, neigh),
             rev=true)
     end

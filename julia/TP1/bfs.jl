@@ -3,7 +3,7 @@ using DataStructures: Queue, enqueue!, dequeue!, isempty
 include("../LoadGraph/LoadGraph.jl")
 using .LoadGraph: load_adjacency_list, AdjacencyList
 
-function main(dir_path="../../cleaned_data", dtype::Type=Int32)
+function main(dir_path="../../cleaned_data", dtype::Type=UInt32)
     for file in filter(x->endswith(x, ".txt"), readdir(dir_path))
         if file != "friendster.txt"
         println("=========== ", file, " ===========")

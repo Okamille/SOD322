@@ -10,12 +10,8 @@ function load_adjacency_list(edge_list, dtype::Type=UInt32)
     adjacency_list = AdjacencyList{dtype}(() -> Vector{dtype}())
     for line in eachline(edge_list)
         n_s, n_t = process_line(line, dtype)
-        update_adj_list!(adjacency_list, n_s, n_t)
+        push!(adjacency_list[n_s], n_t)
+        push!(adjacency_list[n_t], n_s)
     end
     return adjacency_list
-end
-
-function update_adj_list!(adjacency_list::AdjacencyList{T}, n_s::T, n_t::T) where T
-    push!(adjacency_list[n_s], n_t)
-    push!(adjacency_list[n_t], n_s)
 end

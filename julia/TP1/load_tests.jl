@@ -2,7 +2,7 @@ include("../LoadGraph/LoadGraph.jl")
 using .LoadGraph
 
 function main(dir_path="../../cleaned_data", dtype::Type=UInt32)
-    for file in filter(x->endswith(x, ".txt"), readdir(dir_path))
+    for file in filter(x->endswith(x, ".txt"), readdir(dir_path)) if !startswith(file, "friend")
         println(file[1:end-4])
         try
             @time load_adjacency_list("$dir_path/$file", dtype)
@@ -20,7 +20,7 @@ function main(dir_path="../../cleaned_data", dtype::Type=UInt32)
             println("OOM")
         end
         println()
-    end
+    end end
 end
 
 main()

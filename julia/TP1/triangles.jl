@@ -36,7 +36,7 @@ function truncate_graph(graph::AdjacencyList{T}) where T<:Real
         truncated[node] = sort(
             [neighbour
              for neighbour in neighbours
-             if degree(graph, node) >= degree(graph, neighbour) & node < neighbour
+             if degree(graph, node) >= degree(graph, neighbour)
             ],
             by=neigh->degree(graph, neigh),
             rev=true)

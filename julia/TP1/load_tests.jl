@@ -1,8 +1,8 @@
 include("../LoadGraph/LoadGraph.jl")
 using .LoadGraph
 
-function main(dir_path="../../cleaned_data", dtype::Type=Int32)
-    for file in filter(x->occursin(".txt", x), readdir(dir_path))
+function main(dir_path="../../cleaned_data", dtype::Type=UInt32)
+    for file in filter(x->endswith(x, ".txt"), readdir(dir_path))
         println(file[1:end-4])
         try
             @time load_adjacency_list("$dir_path/$file", dtype)

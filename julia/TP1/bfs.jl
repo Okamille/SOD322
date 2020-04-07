@@ -7,13 +7,14 @@ function main(dir_path="../../cleaned_data", dtype::Type=UInt32)
     for file in filter(x->endswith(x, ".txt"), readdir(dir_path))
         if file != "friendster.txt"
         println("=========== ", file, " ===========")
-        @time graph = load_adjacency_list("$dir_path/$file", dtype)
-        # @time cc = BFS(graph, one(dtype))
+        graph = load_adjacency_list("$dir_path/$file", dtype)
+
         @time all_cc = all_connected_components(graph)
         println("Number of connected components: ", length(all_cc))
         fraction = maximum(length(cc) for cc in all_cc) / length(graph)
         println("Fraction of nodes in the largest CC: ",
                 round(100*fraction, digits=2), "%")
+
         @time diam_lb = diameter_lb(graph)
         println("Diameter lower bound : ", diam_lb)
         println()
@@ -42,7 +43,7 @@ function BFS(graph::AdjacencyList{T}, node::T) where T
     return [connected_component, distances]
 end
 
-function all_connected_components(graph::AdjacencyList{T}) where T<:Real
+function all_connected_components(graph::AdjacencyList{T}) where T
     connected_components = Vector{T}[]
     marks = Dict{T, Bool}()
     for key in keys(graph)
@@ -51,7 +52,7 @@ function all_connected_components(graph::AdjacencyList{T}) where T<:Real
         elseif ! haskey(marks, key) # We check that the node is not marked yet
             # We mark this new node
             marks[key] = true
-            cc = BFS(graph, key)[1]
+            cc, _ = BFS(graph, key)
 
             # We mark the nodes that are in the connected component returned by BFS
             for node in cc

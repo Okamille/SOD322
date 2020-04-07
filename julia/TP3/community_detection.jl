@@ -5,7 +5,7 @@ import Cairo, Fontconfig
 using Compose
 
 
-function main(nb_nodes=400, nb_clusters=4, q=0.1)
+function plot_graphs(nb_nodes=400, nb_clusters=4, q=0.1)
     p = [0.1, 0.3, 0.5, 0.9]
     for p_i in p
         g, y = generate_graph(p_i, q, nb_nodes, nb_clusters)
@@ -35,7 +35,6 @@ function generate_graph(p::Float64, q::Float64, nb_nodes::Int64, nb_clusters::In
         end
     end
 
-    # Create networkx graph object
     g = SimpleGraph(nb_nodes)
     for edge in edges
         add_edge!(g, edge[1], edge[2])
@@ -45,4 +44,4 @@ function generate_graph(p::Float64, q::Float64, nb_nodes::Int64, nb_clusters::In
 end
 
 
-main()
+plot_graphs()

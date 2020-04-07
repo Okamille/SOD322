@@ -1,11 +1,11 @@
 include("../LoadGraph/LoadGraph.jl")
-using .LoadGraph: load_adjacency_list, AdjacencyList
+using .LoadGraph: load_directed_adjacency_list, AdjacencyList
 
 function main(dir_path="../../cleaned_data", dtype::Type=Int32)
     for file in filter(x->endswith(x, ".txt"), readdir(dir_path))
         if file != "friendster.txt"
         println(file)
-        @time graph = load_adjacency_list("$dir_path/$file", dtype)
+        graph = undirected_adjacency_list("$dir_path/$file", dtype)
         @time triangles = list_triangles(graph)
         println(length(triangles))
         println()
@@ -36,7 +36,7 @@ function truncate_graph(graph::AdjacencyList{T}) where T<:Real
         truncated[node] = sort(
             [neighbour
              for neighbour in neighbours
-            #  if degree(graph, node) >= degree(graph, neighbour)
+             if degree(graph, node) >= degree(graph, neighbour)
             ],
             by=neigh->degree(graph, neigh),
             rev=true)
@@ -47,11 +47,11 @@ end
 function find_triangles(graph::Dict{T, Vector{T}}) where T<:Real
     triangles = Vector{Vector{T}}()
     for (node, neighbours) in graph
-        for neighbour in filter(neigh->(neigh > node), neighbours)
+        for neighbour in neighbours if neighbour > node
             for second_neighbour in intersect(neighbours, graph[neighbour])
                 push!(triangles, [node, neighbour, second_neighbour])
             end
-        end
+        end end
     end
     return triangles
 end

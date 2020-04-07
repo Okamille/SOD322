@@ -5,7 +5,7 @@ function main(dir_path="../../cleaned_data", dtype::Type=UInt32)
     for file in filter(x->endswith(x, ".txt"), readdir(dir_path)) if !startswith(file, "friend")
         println(file[1:end-4])
         try
-            @time load_adjacency_list("$dir_path/$file", dtype)
+            @time load_directed_adjacency_list("$dir_path/$file", dtype)
         catch OutOfMemoryError
             println("OOM")
         end

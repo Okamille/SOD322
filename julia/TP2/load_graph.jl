@@ -1,6 +1,6 @@
 using DelimitedFiles: readdlm
 
-function load_adjacency_list(path::String, n_nodes::Int)
+function load_undirected_adjacency_list(path::String, n_nodes::Int)
     # adjacency_list = Vector{Vector{UInt32}}(undef, n_nodes)
     adjacency_list = [Vector{UInt32}() for _ in 1:n_nodes]
     open(path) do io
@@ -34,5 +34,5 @@ end
 
 
 # m = load_adjacency_matrix("data/email-Eu-core.txt", 1005)
-m = load_adjacency_list("data/com-amazon.ungraph.txt", 334_863)
+m = load_undirected_adjacency_list("data/com-amazon.ungraph.txt", 334_863)
 println(m)

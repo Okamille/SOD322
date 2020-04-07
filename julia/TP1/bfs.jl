@@ -1,13 +1,13 @@
 using DataStructures: Queue, enqueue!, dequeue!, isempty
 
 include("../LoadGraph/LoadGraph.jl")
-using .LoadGraph: load_undirected_adjacency_list, AdjacencyList
+using .LoadGraph: load_adjacency_list, AdjacencyList
 
 function main(dir_path="../../cleaned_data", dtype::Type=UInt32)
     for file in filter(x->endswith(x, ".txt"), readdir(dir_path))
         if file != "friendster.txt"
         println("=========== ", file, " ===========")
-        @time graph = load_undirected_adjacency_list("$dir_path/$file", dtype)
+        @time graph = load_adjacency_list("$dir_path/$file", dtype)
         # @time cc = BFS(graph, one(dtype))
         @time all_cc = all_connected_components(graph)
         println("Number of connected components: ", length(all_cc))

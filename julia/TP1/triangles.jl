@@ -6,8 +6,10 @@ function main(dir_path="../../cleaned_data", dtype::Type=Int32)
         if file != "friendster.txt"
         println(file)
         graph = load_adjacency_list("$dir_path/$file", dtype)
-        @time triangles = list_triangles(graph, dtype)
-        println(length(triangles))
+        # @time triangles = list_triangles(graph, dtype)
+        # println(length(triangles))
+        @time n_triangles = count_triangles(graph, dtype)
+        println(n_triangles)
         println()
         end
     end
@@ -28,6 +30,12 @@ function list_triangles(graph::AdjacencyList, dtype::Type=UInt32)
     truncated = reindex_truncate(graph, dtype)
     triangles = find_triangles(truncated)
     return triangles
+end
+
+function count_triangles(graph::AdjacencyList, dtype::Type=UInt32)
+    truncated = reindex_truncate(graph, dtype)
+    n_triangles = count_triangles(truncated)
+    return n_triangles
 end
 
 function reindex_truncate(graph::AdjacencyList, dtype::Type=UInt32)
@@ -54,6 +62,16 @@ function find_triangles(graph::Vector{Vector{T}}) where T<:Real
         end
     end
     return triangles
+end
+
+function count_triangles(graph::Vector{Vector{T}}) where T<:Real
+    n_triangles = 0
+    for (node, neighbours) in enumerate(graph)
+        for (i, neighbour) in enumerate(neighbours[1:end-1])
+            n_triangles += length(intersect(neighbours[i+1:end], graph[neighbour]))
+        end
+    end
+    return n_triangles
 end
 
 function degree(graph::AdjacencyList, node)

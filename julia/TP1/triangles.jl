@@ -6,9 +6,8 @@ function main(dir_path="../../cleaned_data", dtype::Type=Int32)
         if file != "friendster.txt"
         println(file)
         graph = load_adjacency_list("$dir_path/$file", dtype)
-        @time triangles = list_triangles(graph)
+        @time triangles = list_triangles(graph, dtype)
         println(length(triangles))
-        println(length(unique(triangles)))
         println()
         end
     end
